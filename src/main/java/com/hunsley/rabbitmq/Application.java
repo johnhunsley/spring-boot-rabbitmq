@@ -1,12 +1,10 @@
 package com.hunsley.rabbitmq;
 
-import com.hunsley.rabbitmq.props.RabbitProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(RabbitProperties.class)
+//@EnableConfigurationProperties(RabbitProperties.class)
 public class Application {
 
 //  static final String topicExchangeName = "spring-boot-exchange";

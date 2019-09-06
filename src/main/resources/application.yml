@@ -2,11 +2,5 @@ spring:
   application:
     name: spring-boot-rabbitmq
 
-rabbit:
-  clients:
-    event:
-      exchange: event
-      queue: event.queue
-    command:
-      exchange: command
-      queue: event.queue
+my:
+  example: something
