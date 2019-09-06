@@ -9,5 +9,5 @@ import org.springframework.context.annotation.Import;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Import({RabbitConfig.class})
-public @interface EnableMtdRabbitmqClients {
+public @interface EnableRabbitmqClients {
 }
