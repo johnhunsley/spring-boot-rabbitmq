@@ -13,5 +13,7 @@ public class MessageListenerImpl implements MessageListener {
   @Override
   public void onMessage(Message message) {
     System.out.println(key + ": " + new String(message.getBody()));
+
+    //todo deal with GDP routing
   }
 }
