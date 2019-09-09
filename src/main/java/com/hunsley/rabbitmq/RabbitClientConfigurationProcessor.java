@@ -1,11 +1,18 @@
 package com.hunsley.rabbitmq;
 
 import com.hunsley.rabbitmq.props.Client;
+import com.hunsley.rabbitmq.props.GDPQueue;
 import com.hunsley.rabbitmq.props.RabbitProperties;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Declarable;
+import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -18,10 +25,11 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
+
 @Component
 public class RabbitClientConfigurationProcessor implements ApplicationContextAware {
   private static final String MESSAGE_LISTENER_NAME_SUFFIX = "MessageListenerContainer";
-  private static final String BINDING_NAME_SUFFIX = "Binding";
+  private Logger logger = LogManager.getLogger(RabbitClientConfigurationProcessor.class);
 
   private final RabbitProperties rabbitProperties;
   private final SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory;
@@ -40,20 +48,33 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
   }
 
   @PostConstruct
-  public void initListeners() {
+  public void initClients() {
+    logger.info("Initializing Rabbit Clients...............");
     ConfigurableListableBeanFactory beanFactory = ((ConfigurableApplicationContext) applicationContext).getBeanFactory();
     Map<String, Client> clients = rabbitProperties.getClients();
 
     for(final String key : clients.keySet()) {
+      logger.info("Creating client named - "+key);
       Client client = clients.get(key);
-      TopicExchange exchange = createExchange(client.getExchange());
-      Queue queue = createQueue(client.getQueue());
 
-      beanFactory.registerSingleton(client.getExchange(), exchange);
-      beanFactory.registerSingleton(client.getQueue(), queue);
-      beanFactory.registerSingleton(key+BINDING_NAME_SUFFIX, createBinding(queue, exchange, client.getRoutingKey()));
-      beanFactory.registerSingleton(key+MESSAGE_LISTENER_NAME_SUFFIX, createListener(key, client.getQueue()));
+      beanFactory.registerSingleton(key+"Declarables", createGDPDeclarables(client));
+      beanFactory.registerSingleton(key+MESSAGE_LISTENER_NAME_SUFFIX,
+          createListener(key, client.getQueue()+GDPQueue.MAIN.value));
     }
+  }
+
+  private Declarables createGDPDeclarables(Client client) {
+    List<Declarable> declarables = new ArrayList<>();
+    TopicExchange exchange = createExchange(client.getExchange());
+    declarables.add(exchange);
+
+    for(GDPQueue gdpQueue : GDPQueue.values()) {
+      Queue queue = createQueue(client.getQueue()+gdpQueue.value);
+      declarables.add(queue);
+      declarables.add(createBinding(queue, exchange, client.getRoutingKey()+gdpQueue.value));
+    }
+
+    return new Declarables(declarables);
   }
 
   private TopicExchange createExchange(final String name) {
@@ -74,4 +95,5 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
   private Binding createBinding(Queue queue, TopicExchange exchange, final String routingKey) {
     return BindingBuilder.bind(queue).to(exchange).with(routingKey);
   }
+
 }
