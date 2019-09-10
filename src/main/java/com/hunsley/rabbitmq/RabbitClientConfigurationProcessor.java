@@ -111,7 +111,7 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
   private SimpleMessageListenerContainer createListener(final String id, final String queueName, RabbitTemplate rabbitTemplate) {
     SimpleMessageListenerContainer container = simpleRabbitListenerContainerFactory.createListenerContainer();
     container.setQueueNames(queueName);
-    container.setMessageListener(new ClientGDPMessageListenerImpl(id));
+    container.setMessageListener(new ClientGDPMessageListenerImpl(id, rabbitTemplate, ));
     return container;
   }
 

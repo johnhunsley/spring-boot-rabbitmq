@@ -23,7 +23,9 @@ public class SupportedRabbitClientsProcessor implements BeanPostProcessor {
       SupportedRabbitClients supportedClients = bean.getClass().getAnnotation(SupportedRabbitClients.class);
 
       if (supportedClients != null) {
+        for(String client : supportedClients.value()) {
 
+        }
       }
     }
 
