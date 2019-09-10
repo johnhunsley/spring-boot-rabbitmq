@@ -1,5 +1,6 @@
 package com.hunsley.rabbitmq;
 
+import com.hunsley.rabbitmq.callbacks.ClientReturnCallback;
 import com.hunsley.rabbitmq.props.Client;
 import com.hunsley.rabbitmq.props.GDPQueue;
 import com.hunsley.rabbitmq.props.RabbitProperties;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 
@@ -34,17 +36,23 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
 
   private static final String MESSAGE_LISTENER_NAME_SUFFIX = "MessageListenerContainer";
   private static final String UNDELIVERABLE = "undeliverable";
+  private static final String TEMPLATE_SUFFIX = "RabbitTemplate";
 
   private final RabbitProperties rabbitProperties;
+  private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
   private final SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory;
   private final ConnectionFactory connectionFactory;
   private ApplicationContext applicationContext;
 
+
+
   @Autowired
   public RabbitClientConfigurationProcessor(RabbitProperties rabbitProperties,
+      ThreadPoolTaskExecutor threadPoolTaskExecutor,
       SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory,
       ConnectionFactory connectionFactory) {
     this.rabbitProperties = rabbitProperties;
+    this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.simpleRabbitListenerContainerFactory = simpleRabbitListenerContainerFactory;
     this.connectionFactory = connectionFactory;
   }
@@ -67,6 +75,7 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
       beanFactory.registerSingleton(key + "Declarables", createGDPDeclarables(client));
       beanFactory.registerSingleton(key + MESSAGE_LISTENER_NAME_SUFFIX,
           createListener(key, client.getQueue() + GDPQueue.MAIN.value));
+      beanFactory.registerSingleton(key + TEMPLATE_SUFFIX, createClientTemplate(client.getExchange()));
     }
 
     beanFactory.registerSingleton(UNDELIVERABLE+"Declarables", createUndeliverableDeliverables());
@@ -112,8 +121,22 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
     return BindingBuilder.bind(queue).to(exchange).with(routingKey);
   }
 
-  private RabbitTemplate createClientTemplate() {
-    return null;
+  private RabbitTemplate createClientTemplate(final String exchange) {
+    RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+    rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+      if (!ack) {
+        logger.error("NACK received in ConfirmCallback. Message not delivered to Rabbit. Cause: {}\n{}",
+            cause, correlationData);
+      }
+    });
+
+    rabbitTemplate.setReturnCallback(new ClientReturnCallback(connectionFactory, UNDELIVERABLE, threadPoolTaskExecutor));
+    rabbitTemplate.setExchange(exchange);
+    rabbitTemplate.setMandatory(true);
+    return rabbitTemplate;
+
   }
 
 }
+
+
