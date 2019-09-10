@@ -69,13 +69,15 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
     Map<String, Client> clients = rabbitProperties.getClients();
 
     for(final String key : clients.keySet()) {
-      logger.info("Creating client named - "+key);
       Client client = clients.get(key);
+      final String id = client.getId();
+      logger.info("Creating client named - "+id);
 
-      beanFactory.registerSingleton(key + "Declarables", createGDPDeclarables(client));
-      beanFactory.registerSingleton(key + MESSAGE_LISTENER_NAME_SUFFIX,
-          createListener(key, client.getQueue() + GDPQueue.MAIN.value));
-      beanFactory.registerSingleton(key + TEMPLATE_SUFFIX, createClientTemplate(client.getExchange()));
+      beanFactory.registerSingleton(id + "Declarables", createGDPDeclarables(client));
+      RabbitTemplate template = createClientTemplate(client.getExchange());
+      beanFactory.registerSingleton(id + TEMPLATE_SUFFIX, template);
+      beanFactory.registerSingleton(id + MESSAGE_LISTENER_NAME_SUFFIX,
+          createListener(id, client.getQueue() + GDPQueue.MAIN.value, template));
     }
 
     beanFactory.registerSingleton(UNDELIVERABLE+"Declarables", createUndeliverableDeliverables());
@@ -106,10 +108,10 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
     return new TopicExchange(name);
   }
 
-  private SimpleMessageListenerContainer createListener(final String key, final String queueName) {
+  private SimpleMessageListenerContainer createListener(final String id, final String queueName, RabbitTemplate rabbitTemplate) {
     SimpleMessageListenerContainer container = simpleRabbitListenerContainerFactory.createListenerContainer();
     container.setQueueNames(queueName);
-    container.setMessageListener(new MessageListenerImpl(key));
+    container.setMessageListener(new ClientGDPMessageListenerImpl(id));
     return container;
   }
 
@@ -123,6 +125,7 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
 
   private RabbitTemplate createClientTemplate(final String exchange) {
     RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+
     rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
       if (!ack) {
         logger.error("NACK received in ConfirmCallback. Message not delivered to Rabbit. Cause: {}\n{}",

@@ -3,10 +3,10 @@ package com.hunsley.rabbitmq;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
 
-public class MessageListenerImpl implements MessageListener {
+public class ClientGDPMessageListenerImpl implements MessageListener {
   private final String key;
 
-  public MessageListenerImpl(String key) {
+  public ClientGDPMessageListenerImpl(String key) {
     this.key = key;
   }
 

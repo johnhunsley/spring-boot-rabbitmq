@@ -1,0 +1,10 @@
+rabbit:
+  clients:
+    event:
+      exchange: event
+      queue: event.queue
+      routingKey: event
+    command:
+      exchange: command
+      queue: command.queue
+      routingKey: command

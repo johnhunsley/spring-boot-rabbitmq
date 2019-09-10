@@ -1,6 +1,7 @@
 package com.hunsley.rabbitmq.props;
 
 public class Client {
+  private String id;
   private String exchange;
   private String queue;
   private String routingKey;
@@ -27,5 +28,13 @@ public class Client {
 
   public void setRoutingKey(String routingKey) {
     this.routingKey = routingKey;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
   }
 }
