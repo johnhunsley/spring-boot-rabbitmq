@@ -1,6 +1,7 @@
 package com.hunsley.rabbitmq;
 
 import com.hunsley.rabbitmq.callbacks.ClientReturnCallback;
+import com.hunsley.rabbitmq.handler.SupportedRabbitClientsProcessor;
 import com.hunsley.rabbitmq.props.Client;
 import com.hunsley.rabbitmq.props.GDPQueue;
 import com.hunsley.rabbitmq.props.RabbitProperties;
@@ -26,11 +27,13 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 
 @Component
+@DependsOn("supportedRabbitClientsProcessor")
 public class RabbitClientConfigurationProcessor implements ApplicationContextAware {
   private Logger logger = LogManager.getLogger(RabbitClientConfigurationProcessor.class);
 
@@ -42,19 +45,20 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
   private final SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory;
   private final ConnectionFactory connectionFactory;
+  private final SupportedRabbitClientsProcessor supportedRabbitClientsProcessor;
   private ApplicationContext applicationContext;
-
-
 
   @Autowired
   public RabbitClientConfigurationProcessor(RabbitProperties rabbitProperties,
       ThreadPoolTaskExecutor threadPoolTaskExecutor,
       SimpleRabbitListenerContainerFactory simpleRabbitListenerContainerFactory,
-      ConnectionFactory connectionFactory) {
+      ConnectionFactory connectionFactory,
+      SupportedRabbitClientsProcessor supportedRabbitClientsProcessor) {
     this.rabbitProperties = rabbitProperties;
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.simpleRabbitListenerContainerFactory = simpleRabbitListenerContainerFactory;
     this.connectionFactory = connectionFactory;
+    this.supportedRabbitClientsProcessor = supportedRabbitClientsProcessor;
   }
 
   @Override
@@ -77,7 +81,7 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
       RabbitTemplate template = createClientTemplate(client.getExchange());
       beanFactory.registerSingleton(id + TEMPLATE_SUFFIX, template);
       beanFactory.registerSingleton(id + MESSAGE_LISTENER_NAME_SUFFIX,
-          createListener(id, client.getQueue() + GDPQueue.MAIN.value, template));
+          createListener(client, client.getQueue() + GDPQueue.MAIN.value, template));
     }
 
     beanFactory.registerSingleton(UNDELIVERABLE+"Declarables", createUndeliverableDeliverables());
@@ -99,19 +103,30 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
       Queue queue = createQueue(client.getQueue() + gdpQueue.value);
       declarables.add(queue);
       declarables.add(createBinding(queue, exchange, client.getRoutingKey() + gdpQueue.value));
+
+      if(gdpQueue.equals(GDPQueue.MAIN)) {
+
+        for(String additionalBinding : client.getAdditionalBindings()) {
+          declarables.add(createBinding(queue, exchange, additionalBinding));
+        }
+      }
     }
 
     return new Declarables(declarables);
   }
-
   private TopicExchange createExchange(final String name) {
     return new TopicExchange(name);
   }
 
-  private SimpleMessageListenerContainer createListener(final String id, final String queueName, RabbitTemplate rabbitTemplate) {
+  private SimpleMessageListenerContainer createListener(Client client, final String queueName, RabbitTemplate rabbitTemplate) {
     SimpleMessageListenerContainer container = simpleRabbitListenerContainerFactory.createListenerContainer();
     container.setQueueNames(queueName);
-    container.setMessageListener(new ClientGDPMessageListenerImpl(id, rabbitTemplate, ));
+    container.setMessageListener(
+        new ClientGDPMessageListenerImpl(
+            client.getMaxRetries(),
+            rabbitTemplate,
+            supportedRabbitClientsProcessor.getClientMessageHandlers(client.getId()),
+            client));
     return container;
   }
 

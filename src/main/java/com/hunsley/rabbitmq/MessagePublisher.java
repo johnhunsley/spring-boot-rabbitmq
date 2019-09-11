@@ -1,12 +1,15 @@
 package com.hunsley.rabbitmq;
 
+import static com.hunsley.rabbitmq.RabbitConfig.ORIGINAL_ROUTING_KEY;
+
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.stereotype.Component;
 
-@Component
 public class MessagePublisher {
+  private Logger logger = LogManager.getLogger(MessagePublisher.class);
 
   public static final int WAIT_FOR_CONFIRMS_TIMEOUT = 10000;
 
@@ -21,7 +24,7 @@ public class MessagePublisher {
                 message);
             confirmed.set(template.waitForConfirms(WAIT_FOR_CONFIRMS_TIMEOUT));
           } catch (Exception ex) {
-            log.error("Failed sending message to queue {}",
+            logger.error("Failed sending message to queue {}",
                 routingKey, ex);
           }
           return confirmed.get();
@@ -31,13 +34,14 @@ public class MessagePublisher {
     );
 
     if (!confirmed.get()) {
-      log.error("Failed to get confirmation that message was delivered to Rabbit.\n{}",
-          MessageFormatter.forLogging(message));
+      logger.error("Failed to get confirmation that message was delivered to Rabbit.\n{}",
+          message.toString());
     } else if (!ack.get()) {
-      log.error("NACK received in ConfirmCallback. Message not delivered to Rabbit.\n{}",
-          MessageFormatter.forLogging(message));
+      logger.error("NACK received in ConfirmCallback. Message not delivered to Rabbit.\n{}",
+          message.toString());
     } else {
-      log.debug("Confirm received from RabbitMQ.");
+      logger.error("Confirm received from RabbitMQ.");
     }
   }
+
 }

@@ -9,7 +9,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Configuration
 @ComponentScan
 public class RabbitConfig {
-
+  public static final String ORIGINAL_ROUTING_KEY = "original-routing-key";
+  public static final String RETRIES_HEADER_KEY = "x-retries";
 
   @Bean
   public ThreadPoolTaskExecutor threadPoolTaskExecutor(
