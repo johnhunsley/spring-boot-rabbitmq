@@ -70,7 +70,7 @@ public class ClientGDPMessageListenerImpl implements MessageListener {
   private void handleMessage(Message message) {
 
     if(messageHandlers != null && !messageHandlers.isEmpty()) {
-//      messageHandlers.forEach(messageHandler -> handleMessage(message));
+
       for(MessageHandler messageHandler : messageHandlers) {
         messageHandler.handleMessage(message);
       }

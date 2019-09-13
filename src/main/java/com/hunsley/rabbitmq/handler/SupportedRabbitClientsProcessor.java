@@ -41,9 +41,12 @@ public final class SupportedRabbitClientsProcessor implements BeanPostProcessor 
           messageHandlers.add(client, handler);
         }
       }
-    }
 
-    return bean;
+      return null;
+
+    } else {
+      return bean;
+    }
   }
 }
 

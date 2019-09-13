@@ -11,6 +11,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 public class RabbitConfig {
   public static final String ORIGINAL_ROUTING_KEY = "original-routing-key";
   public static final String RETRIES_HEADER_KEY = "x-retries";
+  public static final String DEAD_LETTER_EXCHANGE_HEADER = "x-dead-letter-exchange";
+  public static final String DEAD_LETTER_ROUTING_KEY_HEADER = "x-dead-letter-routing-key";
+  public static final String RETRY_TTL_HEADER = "x-message-tt";
 
   @Bean
   public ThreadPoolTaskExecutor threadPoolTaskExecutor(

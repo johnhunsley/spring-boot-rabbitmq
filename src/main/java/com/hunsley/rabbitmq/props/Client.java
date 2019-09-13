@@ -5,6 +5,7 @@ public class Client {
   private String exchange;
   private String queue;
   private int maxRetries;
+  private int retryTtl;
   private String routingKey;
   private String[] additionalBindings;
 
@@ -54,5 +55,13 @@ public class Client {
 
   public void setAdditionalBindings(String[] additionalBindings) {
     this.additionalBindings = additionalBindings;
+  }
+
+  public int getRetryTtl() {
+    return retryTtl;
+  }
+
+  public void setRetryTtl(int retryTtl) {
+    this.retryTtl = retryTtl;
   }
 }
