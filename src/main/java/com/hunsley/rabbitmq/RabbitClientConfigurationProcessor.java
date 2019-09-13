@@ -104,11 +104,11 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
     declarables.add(exchange);
 
     //create the main queue and binding
-    Queue mainQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.MAIN)
+    Queue mainQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.MAIN.value)
         .withArgument(DEAD_LETTER_EXCHANGE_HEADER, client.getExchange())
-        .withArgument(DEAD_LETTER_ROUTING_KEY_HEADER, GDPQueue.MAIN.value).build();
+        .withArgument(DEAD_LETTER_ROUTING_KEY_HEADER, client.getRoutingKey() + GDPQueue.INVALID.value).build();
     declarables.add(
-        BindingBuilder.bind(mainQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.MAIN));
+        BindingBuilder.bind(mainQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.MAIN.value));
 
     for(String extraBinding : client.getAdditionalBindings()) {
       declarables.add(BindingBuilder.bind(mainQueue).to(exchange).with(extraBinding));
@@ -117,24 +117,24 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
     declarables.add(mainQueue);
 
     //create the retry queue
-    Queue retryQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.RETRY)
+    Queue retryQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.RETRY.value)
         .withArgument(DEAD_LETTER_EXCHANGE_HEADER, client.getExchange())
-        .withArgument(DEAD_LETTER_ROUTING_KEY_HEADER, GDPQueue.RETRY.value)
+        .withArgument(DEAD_LETTER_ROUTING_KEY_HEADER, client.getRoutingKey() + GDPQueue.MAIN.value)
         .withArgument(RETRY_TTL_HEADER, client.getRetryTtl()).build();
     declarables.add(
-        BindingBuilder.bind(retryQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.RETRY));
-    declarables.add(mainQueue);
+        BindingBuilder.bind(retryQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.RETRY.value));
+    declarables.add(retryQueue);
 
     //create the dead letter queue
-    Queue deadLetterQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.DEAD_LETTER).build();
+    Queue deadLetterQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.DEAD_LETTER.value).build();
     declarables.add(
-        BindingBuilder.bind(deadLetterQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.DEAD_LETTER));
+        BindingBuilder.bind(deadLetterQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.DEAD_LETTER.value));
     declarables.add(deadLetterQueue);
 
     //create the invalid msg queue
-    Queue invalidMsgQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.INVALID).build();
+    Queue invalidMsgQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.INVALID.value).build();
     declarables.add(
-        BindingBuilder.bind(invalidMsgQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.INVALID));
+        BindingBuilder.bind(invalidMsgQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.INVALID.value));
     declarables.add(invalidMsgQueue);
 
     return new Declarables(declarables);
