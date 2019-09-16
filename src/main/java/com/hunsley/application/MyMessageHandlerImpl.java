@@ -11,6 +11,6 @@ public class MyMessageHandlerImpl implements MessageHandler {
   @Override
   public void handleMessage(Message message) {
     System.out.println(new String(message.getBody()));
-    throw new InvalidMessageException("meh..");
+    throw new InvalidMessageException(message.toString());
   }
 }
