@@ -106,7 +106,7 @@ public class RabbitClientConfigurationProcessor implements ApplicationContextAwa
     //create the main queue and binding
     Queue mainQueue = QueueBuilder.durable(client.getQueue() + GDPQueue.MAIN.value)
         .withArgument(DEAD_LETTER_EXCHANGE_HEADER, client.getExchange())
-        .withArgument(DEAD_LETTER_ROUTING_KEY_HEADER, client.getRoutingKey() + GDPQueue.DEAD_LETTER.value).build();
+        .withArgument(DEAD_LETTER_ROUTING_KEY_HEADER, client.getRoutingKey() + GDPQueue.INVALID.value).build();
     declarables.add(
         BindingBuilder.bind(mainQueue).to(exchange).with(client.getRoutingKey() + GDPQueue.MAIN.value));
 

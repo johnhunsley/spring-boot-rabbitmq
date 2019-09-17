@@ -52,6 +52,9 @@ public class ClientGDPMessageListenerImpl implements MessageListener {
       handleMessage(message);
 
     } catch (InvalidMessageException e) {
+      logger.error("Invalid message received", e);
+      throw e;
+    } catch (Exception e) {
 
       if (maxRetriesExceeded(message)) {
         logger.error("retries exceeded for message {}, reason {}", message, e);
@@ -61,13 +64,10 @@ public class ClientGDPMessageListenerImpl implements MessageListener {
         logger.info("retry message {}, reason {}", message, e);
         publish(client.getRoutingKey() + GDPQueue.RETRY.value, message);
       }
-
-      logger.error("Invalid message received", e);
-      throw e;
     }
   }
 
-  private void handleMessage(Message message) {
+  private void handleMessage(Message message) throws Exception {
 
     if(messageHandlers != null && !messageHandlers.isEmpty()) {
 
@@ -77,7 +77,7 @@ public class ClientGDPMessageListenerImpl implements MessageListener {
 
     } else {
       //todo - do we want to throw this here or handle a checked ex?
-      throw new RuntimeException("No message handler implementations");
+      throw new Exception("No message handler implementations");
     }
   }
 
